@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/AlexeyBeley/go_common/logger"
-	"github.com/AlexeyBeley/k8s_api/kub_api"
+	"github.com/AlexeyBeley/k8s_go/kub_api"
 	"k8s.io/client-go/util/homedir"
 )
 

@@ -6,7 +6,7 @@ toolchain go1.24.3
 
 require (
 	github.com/AlexeyBeley/go_common v0.0.1
-	github.com/AlexeyBeley/k8s_api/kub_api v0.0.0-20250514000630-9734ba5e0ae2
+	github.com/AlexeyBeley/k8s_go/kub_api v0.0.0-20250514000630-9734ba5e0ae2
 	k8s.io/client-go v0.33.0
 )
 
