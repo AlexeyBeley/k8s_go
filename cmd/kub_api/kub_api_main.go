@@ -1,23 +1,17 @@
 package main
 
 import (
-	"flag"
-	"path/filepath"
-
 	"github.com/AlexeyBeley/go_common/logger"
 	"github.com/AlexeyBeley/k8s_go/kub_api"
-	"k8s.io/client-go/util/homedir"
 )
 
 var lg = &(logger.Logger{})
 
 func main() {
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+
+	api, err := kub_api.KubAPINew()
+	if err != nil {
+		panic(err)
 	}
-	api := kub_api.KubAPI{Kubeconfig: kubeconfig}
-	api.List()
+	api.ListPods()
 }
