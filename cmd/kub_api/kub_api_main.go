@@ -13,5 +13,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	api.ListPods()
+	api.GetPods()
 }

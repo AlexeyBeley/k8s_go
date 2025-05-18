@@ -173,7 +173,7 @@ func TestListPods(t *testing.T) {
 			t.Errorf("%v", err)
 		}
 		api.Namespace = realConfig.Namespace
-		api.ListPods()
+		api.GetPods()
 
 		if err != nil {
 			t.Errorf("%v", err)
@@ -193,6 +193,25 @@ func TestPrunePods(t *testing.T) {
 		api.Namespace = realConfig.Namespace
 		jobName := "test"
 		api.PrunePods(&jobName)
+
+		if err != nil {
+			t.Errorf("%v", err)
+		}
+	})
+}
+
+func TestProvisionNamespace(t *testing.T) {
+	t.Run("Valid run", func(t *testing.T) {
+		realConfig := loadRealConfig()
+		_ = realConfig
+
+		api, err := KubAPINew()
+		if err != nil {
+			t.Errorf("%v", err)
+		}
+		api.Namespace = realConfig.Namespace
+
+		api.ProvisionNamespace(realConfig.Namespace)
 
 		if err != nil {
 			t.Errorf("%v", err)
@@ -299,7 +318,10 @@ func TestGetAllIngresses(t *testing.T) {
 				t.Errorf("%v", err)
 			}
 			for _, ingress := range ret {
-				fmt.Printf("%s", *ingress.Spec.IngressClassName)
+				fmt.Printf("Ingress: %s, IngressClassName: %s\n ", *&ingress.Name, *ingress.Spec.IngressClassName)
+				if *ingress.Spec.IngressClassName == "nginx-public" {
+					fmt.Print(ingress.String())
+				}
 			}
 
 			log.Printf("%s: %d", namespace.Name, len(ret))

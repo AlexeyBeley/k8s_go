@@ -11,6 +11,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -81,10 +82,10 @@ func KubAPINew() (*KubAPI, error) {
 		}
 	}
 
-	// Create a Kubernetes clientset
+	// Create a Kubernetes kapi.clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		fmt.Printf("Error creating clientset: %v\n", err)
+		fmt.Printf("Error creating kapi.clientset: %v\n", err)
 		os.Exit(1)
 	}
 	ret.clientset = clientset
@@ -92,19 +93,16 @@ func KubAPINew() (*KubAPI, error) {
 	return &ret, nil
 }
 
-func (kapi *KubAPI) ListPods() {
+func (kapi *KubAPI) GetPods() ([]corev1.Pod, error) {
 
 	// List pods in the specified namespace
 	pods, err := kapi.clientset.CoreV1().Pods(*kapi.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		fmt.Printf("Error listing pods in namespace '%s': %v\n", *kapi.Namespace, err)
-		os.Exit(1)
+		return nil, err
 	}
 
-	fmt.Printf("Pods in namespace '%s':\n", *kapi.Namespace)
-	for _, pod := range pods.Items {
-		fmt.Printf("- Name: %s, Status: %s\n", pod.Name, pod.Status.Phase)
-	}
+	return pods.Items, nil
 }
 
 func (kapi *KubAPI) GetNamespaces() ([]corev1.Namespace, error) {
@@ -133,7 +131,7 @@ func (kapi *KubAPI) CreateJob(job *Job) error {
 	batchJob, err := job.GenerateBatchJob()
 	batchJob.ObjectMeta.Namespace = *namespace
 
-	createdJob, err := kapi.clientset.BatchV1().Jobs(*namespace).Create(context.TODO(), batchJob, metav1.CreateOptions{})
+	createdJob, err := kapi.clientset.BatchV1().Jobs(*kapi.Namespace).Create(context.TODO(), batchJob, metav1.CreateOptions{})
 
 	if err != nil {
 		fmt.Printf("Error Creating Job: %v\n", err)
@@ -152,14 +150,14 @@ func (kapi *KubAPI) DeleteJob(job *Job) error {
 	batchJob, err := job.GenerateBatchJob()
 	batchJob.ObjectMeta.Namespace = *namespace
 
-	err = kapi.clientset.BatchV1().Jobs(*namespace).Delete(context.TODO(), *job.JobName, metav1.DeleteOptions{})
+	err = kapi.clientset.BatchV1().Jobs(*kapi.Namespace).Delete(context.TODO(), *job.JobName, metav1.DeleteOptions{})
 
 	if err != nil {
 		fmt.Printf("Error listing namespaces: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Job deleted successfully! Name: %s, Namespace: %s\n", *job.JobName, *namespace)
+	fmt.Printf("Job deleted successfully! Name: %s, Namespace: %s\n", *job.JobName, *kapi.Namespace)
 	return nil
 }
 
@@ -328,4 +326,71 @@ func (kapi *KubAPI) GetIngresses() ([]networkingv1.Ingress, error) {
 	}
 
 	return ingressList.Items, nil
+}
+
+func (kapi *KubAPI) CreateServiceAccount(serviceAccount *corev1.ServiceAccount) error {
+	// List Services in the specified namespace
+
+	_, err := kapi.clientset.CoreV1().ServiceAccounts(*kapi.Namespace).Create(context.TODO(), serviceAccount, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Printf("Error creating Service Account: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Service Account created successfully")
+
+	return nil
+}
+
+func (kapi *KubAPI) ProvisionRole(role *rbacv1.Role) error {
+	// List Services in the specified namespace
+	// 2. Create a Role
+
+	_, err := kapi.clientset.RbacV1().Roles(*kapi.Namespace).Create(context.TODO(), role, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Printf("Error creating Role: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Role created successfully")
+	return nil
+}
+
+func (kapi *KubAPI) ProvisionServiceAccount(serviceAccount *corev1.ServiceAccount) error {
+	// List Services in the specified namespace
+	// 2. Create a Role
+
+	_, err := kapi.clientset.CoreV1().ServiceAccounts(*kapi.Namespace).Create(context.TODO(), serviceAccount, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Printf("Error creating Role: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Service Account created successfully")
+	return nil
+}
+
+func (kapi *KubAPI) ProvisionRoleBinding(roleBinding *rbacv1.RoleBinding) error {
+	// 3. Create a RoleBinding
+
+	_, err := kapi.clientset.RbacV1().RoleBindings(*kapi.Namespace).Create(context.TODO(), roleBinding, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Printf("Error creating RoleBinding: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("RoleBinding created successfully")
+	return nil
+}
+
+func (kapi *KubAPI) ProvisionNamespace(name *string) error {
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: *name,
+		},
+	}
+
+	namespace, err := kapi.clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Printf("Created namespace: %s, %s\n", *name, namespace.UID)
+		return err
+	}
+
+	return nil
 }
